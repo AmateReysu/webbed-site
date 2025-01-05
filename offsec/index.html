@@ -30,12 +30,17 @@
             bottom: 0;
         }
         a {
-            color: #13668a;
-            text-decoration: none;
-        }
-        a:hover {
+            color: #95b6c4;
             text-decoration: underline;
         }
+        .code-box {
+            background-color: #1e272e;
+            border: 1px solid #706fd3;
+            overflow-x: auto;
+            padding: 10px;
+            white-space: pre;
+        }
+
     </style>
 </head>
 <body>
@@ -46,7 +51,318 @@
         <p><a href="https://tryhackme.com/r/room/reverselfiles">Reversing ELF</a> is a TryHackMe challenge that aims to introduce the user to various techniques used for Reverse Engineering via 8 challenges of increasing difficulty.<br>
         Tools we will be using include the command-line tools "strings" and "trace" and the the software reverse engineering tool suite from the NSA known as Ghidra. I will be providing a Walkthrough for each of the challenges and how to modify the ELF files to get the flags for the room<br>
         </p>
-        <a href="#">Learn more</a>
-    </main>
+        <h2>Crackme1</h2>
+        <p>Crackme1 is very simple as the password is given to us by the file when executed, we simply need to give it the permission to be executable.</p>
+        <div class="code-box">> chmod +x crackme1 
+> ./crackme1 
+flag{not_that_kind_of_elf}</div>
+        <p>And that's it! We have the first flag for the room. Making the file executable is something we will have to do for every file going forward and as such I will omit it from now on.</p>
+        <h2>Crackme2</h2>
+        <p>Crackme2 is a little more difficult as we need to provide a password in order to receive the flag. When entering any incorrect password we receive:</p>
+        <div class="code-box">> ./crackme2 test
+Access denied.</div>
+        <p>This is where we will use our first command-line tool: ltrace.</p>
+        <div class="code-box">> ltrace ./crackme2 test
+__libc_start_main([ "./crackme2", "test" ] <unfinished ...>
+strcmp("test", "super_secret_password")                            = 1
+puts("Access denied."Access denied.
+)                                             = 15
++++ exited (status 1) +++</div>
+        <p>From this output we can see that our input is being compared against the string "super_secret_password". Using this string as the password for the executable will earn us the second flag:</p>
+        <div class="code-box">> ./crackme2 super_secret_password
+Access granted.
+flag{if_i_submit_this_then_i_will_get_the_points}</div>
+        <h2>Crackme3</h2>
+        <p>Crackme3 once again asks us to provide a password in order to receive the flag, mocking attempts to just a random password.</p>
+        <div class="code-box">> ./crackme3 test
+Come on, even my aunt Mildred got this one!</div>
+        <p>ltrace unfortunately does not help us instance:</p>
+        <div class="code-box">> ltrace ./crackme3 test
+__libc_start_main([ "./crackme3", "test" ] <unfinished ...> 
+strlen("test")                                                     = 4
+malloc(8)                                                          = 0x97061a0
+strlen("test")                                                     = 4
+strlen("dGVzdA==")                                                 = 8
+puts("Come on, even my aunt Mildred go"...Come on, even my aunt Mildred got this one!
+)                        = 44
++++ exited (status 255) +++        </div>
+        <p>Instead we will now attempt use the strings command:</p>
+        <div class="code-box">> strings crackme3
+/lib/ld-linux.so.2
+__gmon_start__
+libc.so.6
+_IO_stdin_used
+puts
+strlen
+malloc
+stderr
+fwrite
+fprintf
+strcmp
+__libc_start_main
+GLIBC_2.0
+PTRh
+iD$$
+D$,;D$ 
+UWVS
+[^_]
+Usage: %s PASSWORD
+malloc failed
+ZjByX3kwdXJfNWVjMG5kX2xlNTVvbl91bmJhc2U2NF80bGxfN2gzXzdoMW5nNQ==
+Correct password!
+Come on, even my aunt Mildred got this one!
+ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/
+;*2$"8
+GCC: (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3
+.shstrtab
+.interp
+.note.ABI-tag
+.note.gnu.build-id
+.gnu.hash
+.dynsym
+.dynstr
+.gnu.version
+.gnu.version_r
+.rel.dyn
+.rel.plt
+.init
+.text
+.fini
+.rodata
+.eh_frame_hdr
+.eh_frame
+.ctors
+.dtors
+.jcr
+.dynamic
+.got
+.got.plt
+.data
+.bss
+.comment
+strings: 'test': No such file       </div>
+        <p>While this might seem overwhelming at first, there is a base64-encoded string in the middle of the result that should stand out to you: "ZjByX3kwdXJfNWVjMG5kX2xlNTVvbl91bmJhc2U2NF80bGxfN2gzXzdoMW5nNQ==". When decoded back to regular text we receive "f0r_y0ur_5ec0nd_le55on_unbase64_4ll_7h3_7h1ng5", which is the flag for this challenge</p>
+        <h2>Crackme4</h2>
+        <p>Crackme4 is once again solvable by using ltrace:</p>
+        <div class="code-box">> ltrace ./crackme4 test
+__libc_start_main(0x400716, 2, 0x7ffdbe8bead8, 0x400760 <unfinished ...>
+strcmp("my_m0r3_secur3_pwd", "testing")                            = -7
+printf("password "%s" not OK\n", "testing"password "testing" not OK
+)                        = 26
++++ exited (status 0) +++       </div>
+        <p>From this output we can see that our input is being compared against the string "my_m0r3_secur3_pwd". Using this string as the password for the executable will show us that this is indeed the correct password:</p>
+        <div class="code-box">> ./crackme4 my_m0r3_secur3_pwd
+password OK </div>
+        <h2>Crackme5</h2>
+        <p>We are supposed to find out what input will get the file to output "Good game". Simply executing the file this time will give us an input prompt, which, when failed, will simply tell us to "Always dig deeper".</p>
+        <div class="code-box">> ./crackme5
+ Enter your input:
+test
+Always dig deeper</div>
+        <p>Using ltrace will help us find the solution once more:</p>
+        <div class="code-box">> ltrace ./crackme5          
+__libc_start_main([ "./crackme5" ] <unfinished ...>
+puts("Enter your input:"Enter your input:
+)                                          = 18
+__isoc99_scanf(0x400966, 0x7ffcdf8ca1d0, 0, 0x7fe606686ee4</div>
+        <p>You are still in the input prompt in this moment, so just input anything to receive the following:</p>
+        <div class="code-box">)        = 1
+strlen("test")                                                        = 1
+strlen("test")                                                        = 1
+strncmp("test", "OfdlDSA|3tXb32~X3tX@sX`4tXtz"\177", 28)                   = 36
+puts("Always dig deeper"Always dig deeper
+)                                          = 18
++++ exited (status 0) +++</div>
+        <p>This time, our input is being compared to a string using strncmp() instead of strcmp(). The difference being that strncmp() takes a third argument telling it the maximum number of characters to compare, 28 in this case. This leaves us with <br>OfdlDSA|3tXb32~X3tX@sX`4tXtz as the first 28 characters of the compare string, which we enter as the password:</p>
+        <div class="code-box">> ./crackme5 OfdlDSA|3tXb32~X3tX@sX`4tXtz
+Good game</div>
+        <h2>Crackme6</h2>
+        <p>Crackme6 is the first challenge for which I will be using Ghidra as the challenge itself gives us a hint to take a look at the source code:</p>
+        <div class="code-box">> ./crackme6
+Usage : ./crackme6 password
+Good luck, read the source</div>
+        <p>As this is not a Ghidra tutorial, I will not be explaining how to use it in general but rather how to solve the puzzles using it. Once you have loaded the file into Ghidra, take a look at the main function to find the following:</p>
+        <div class="code-box">undefined8 main(int param_1,undefined8 *param_2)
+
+{
+  if (param_1 == 2) {
+    compare_pwd(param_2[1]);
+  }
+  else {
+    printf("Usage : %s password\nGood luck, read the source\n",*param_2);
+  }
+  return 0;
+}</div>
+        <p>From this we can see that the program is expecting a second argument and that this argument is being passed to the function compare_pwd(). This function is also present in the file and contains the following:</p>
+        <div class="code-box">void compare_pwd(undefined8 param_1)
+
+            {
+              int iVar1;
+              
+              iVar1 = my_secure_test(param_1);
+              if (iVar1 == 0) {
+                puts("password OK");
+              }
+              else {
+                printf("password \"%s\" not OK\n",param_1);
+              }
+              return;
+            }</div>
+        <p>Our input is once again being passed to a different function, this time it's the function my_secure_test(). Inspecting the function reveals the following code:</p>
+        <div class="code-box">undefined8 my_secure_test(char *param_1)
+
+{
+  undefined8 uVar1;
+  
+  if ((*param_1 == '\0') || (*param_1 != '1')) {
+    uVar1 = 0xffffffff;
+  }
+  else if ((param_1[1] == '\0') || (param_1[1] != '3')) {
+    uVar1 = 0xffffffff;
+  }
+  else if ((param_1[2] == '\0') || (param_1[2] != '3')) {
+    uVar1 = 0xffffffff;
+  }
+  else if ((param_1[3] == '\0') || (param_1[3] != '7')) {
+    uVar1 = 0xffffffff;
+  }
+  else if ((param_1[4] == '\0') || (param_1[4] != '_')) {
+    uVar1 = 0xffffffff;
+  }
+  else if ((param_1[5] == '\0') || (param_1[5] != 'p')) {
+    uVar1 = 0xffffffff;
+  }
+  else if ((param_1[6] == '\0') || (param_1[6] != 'w')) {
+    uVar1 = 0xffffffff;
+  }
+  else if ((param_1[7] == '\0') || (param_1[7] != 'd')) {
+    uVar1 = 0xffffffff;
+  }
+  else if (param_1[8] == '\0') {
+    uVar1 = 0;
+  }
+  else {
+    uVar1 = 0xffffffff;
+  }
+  return uVar1;
+}</div>
+        <p>This might look confusing at first but all this function does is compare our input to the characters of the password in order. From this we can gather gather that the password is "1337_pwd".</p>
+        <div class="code-box">> ./crackme6 1337_pwd
+password OK</div>
+        <h2>Crackme7</h2>
+        <p>Crackme7 is another challenge that requires us to use Ghidra to solve. The following can be found in the main function:</p>
+        <div class="code-box">undefined4 main(void)
+
+{
+  int iVar1;
+  undefined4 *puVar2;
+  byte bVar3;
+  undefined4 local_80 [25];
+  int local_1c;
+  int local_18;
+  int local_14;
+  undefined *local_10;
+  
+  bVar3 = 0;
+  local_10 = &stack0x00000004;
+  while( true ) {
+    while( true ) {
+      puts("Menu:\n\n[1] Say hello\n[2] Add numbers\n[3] Quit");
+      printf("\n[>] ");
+      iVar1 = __isoc99_scanf(&DAT_08048814,&local_14);
+      if (iVar1 != 1) {
+        puts("Unknown input!");
+        return 1;
+      }
+      if (local_14 != 1) break;
+      printf("What is your name? ");
+      puVar2 = local_80;
+      for (iVar1 = 0x19; iVar1 != 0; iVar1 = iVar1 + -1) {
+        *puVar2 = 0;
+        puVar2 = puVar2 + (uint)bVar3 * -2 + 1;
+      }
+      iVar1 = __isoc99_scanf(&DAT_0804883a,local_80);
+      if (iVar1 != 1) {
+        puts("Unable to read name!");
+        return 1;
+      }
+      printf("Hello, %s!\n",local_80);
+    }
+    if (local_14 != 2) {
+      if (local_14 == 3) {
+        puts("Goodbye!");
+      }
+      else if (local_14 == 0x7a69) {
+        puts("Wow such h4x0r!");
+        giveFlag();
+      }
+      else {
+        printf("Unknown choice: %d\n",local_14);
+      }
+      return 0;
+    }
+    printf("Enter first number: ");
+    iVar1 = __isoc99_scanf(&DAT_08048875,&local_18);
+    if (iVar1 != 1) break;
+    printf("Enter second number: ");
+    iVar1 = __isoc99_scanf(&DAT_08048875,&local_1c);
+    if (iVar1 != 1) {
+      puts("Unable to read number!");
+      return 1;
+    }
+    printf("%d + %d = %d\n",local_18,local_1c,local_18 + local_1c);
+  }
+  puts("Unable to read number!");
+  return 1;</div>
+        <p>This function contains a lot of code that is not relevant to us finding the flag but the part of it that should stand out to you is this:</p>
+        <div class="code-box">else if (local_14 == 0x7a69) {
+puts("Wow such h4x0r!");
+giveFlag();</div>
+        <p>As we can see, the flag is given to us when the variable local_14 is equal to 0x7a69, which is set in the scan function
+            <div class="code-box"> iVar1 = __isoc99_scanf(&DAT_08048814,&local_14);</div> </p>
+        <p>that is used for input prompt after executing the file. This is the hexadecimal representation of the decimal number 31337, which is the password for this challenge, simply enter it when prompted in the menu:</p>
+        <div class="code-box">> ./crackme7
+Menu:
+
+[1] Say hello
+[2] Add numbers
+[3] Quit
+
+[>] 31337
+Wow such h4x0r!
+flag{much_reversing_very_ida_wow}</div>
+        <h2>Crackme8</h2>
+        <p>Crackme8 is the final challenge of the room and is once again solved using Ghidra. The main function contains the following:</p>
+        <div class="code-box">undefined4 main(int param_1,undefined4 *param_2)
+
+{
+  undefined4 uVar1;
+  int iVar2;
+  
+  if (param_1 == 2) {
+    iVar2 = atoi((char *)param_2[1]);
+    if (iVar2 == -0x35010ff3) {
+      puts("Access granted.");
+      giveFlag();
+      uVar1 = 0;
+    }
+    else {
+      puts("Access denied.");
+      uVar1 = 1;
+    }
+  }
+  else {
+    printf("Usage: %s password\n",*param_2);
+    uVar1 = 1;
+  }
+  return uVar1;
+}</div>
+        <p>The program is expecting a second argument and that this argument is being passed to the function atoi(), which is a C standard library function that converts a string into an integer. Our converted input is then saved in iVar2 and compared against the value -0x35010ff3. We simply convert this value to decimal (-889262067) and use it as the second parameter for the file.</p>
+        <div class="code-box">> ./crackme8 -889262067
+Access granted.
+flag{at_least_this_cafe_wont_leak_your_credit_card_numbers}</div> 
+        <p>And that's it! We have now completed the Reversing ELF room on TryHackMe. I consider this room to be a fun exercise to motivate people to get more curious about Reverse Engineering and introduce them to various approaches one can take. I hope this walkthrough has been helpful to you and that you have learned something new.</p>
+
+    </main> 
 </body>
 </html>
